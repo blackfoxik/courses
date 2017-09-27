@@ -1,0 +1,12 @@
+section assignment 1-3
+programming assignment 1, и  первая часть задания из programming assignment 2  были сделаны с 
+сайта https://see.stanford.edu/Course/CS106B но т.к. этот ресурс больше не поддерживается
+было принято решение выполнять задания с ресурса: 
+http://stanford.edu/class/archive/cs/cs106b/cs106b.1136/
+задания во многом пересекаются, но представлены только задания для programming assignment.
+Задания для section assignment решено брать из пдф-ки для курсового чтения
+(http://web.stanford.edu/class/cs106b/textbook.shtml)
+
+для главы 8 выполнены все упражнения(18т) из книги по курсу. Они во многом пересекаются с заданиями с сайтов.
+
+для главы 9 принято решение проделать задания которые пишутся с нуля и boggle с сайта http://stanford.edu/class/archive/cs/cs106b/cs106b.1136/  (т.к. например задания с лабиринтом были без соответствующего класса)

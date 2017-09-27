@@ -1,0 +1,99 @@
+import acm.program.*;
+import acm.util.*;
+
+
+public class Hangman extends ConsoleProgram{
+	private HangmanCanvas canvas;
+	private int tempts;
+	private String curSign;
+	private String riddleWord;
+	private String hiddenWordByDashes;
+	
+	
+	public void init() {
+		 canvas = new HangmanCanvas();
+		 add(canvas);
+	}
+
+	
+	public void run(){
+		HangmanLexicon lexicon = new HangmanLexicon();
+		riddleWord = getRiddleWord(lexicon);
+		playGame();
+	}
+	private void playGame(){
+		println("Welcome to Hangman!");
+		tempts = 8;
+		canvas.reset();
+		hiddenWordByDashes = getStringWithDashesInsteadSigns();
+		canvas.displayWord(hiddenWordByDashes);
+		boolean gameOn = true;
+		while(gameOn){
+			println("The word looks like this: "+hiddenWordByDashes+"\n");	
+			println("You have "+tempts+" guesses left");
+			curSign = readLine("You guess: ").toUpperCase();
+			String hiddenWordByDashesAfterChecking = replaceDashesInHiddenWordByCurrentSign();
+			gameOn = compareWordsAndShowMessage(hiddenWordByDashesAfterChecking);			
+		}
+	}
+	private boolean compareWordsAndShowMessage(String hiddenWordByDashesAfterChecking){
+		boolean gameOn = true;
+		if(hiddenWordByDashesAfterChecking.equals(riddleWord)){
+			println("You win!");
+			gameOn = false;
+		}
+		else if(hiddenWordByDashes.equals(hiddenWordByDashesAfterChecking)){
+			println("There are no " +curSign+ "'s in the word");
+			canvas.noteIncorrectGuess(curSign.charAt(0));
+			if(tempts>1){
+				tempts--;
+			}
+			else{
+				println("You are completely hung!");
+				println("The word was: "+riddleWord);
+				println("You lose!");
+				gameOn = false;	
+			}
+		}
+		else{
+			println("That guess is correct");
+			hiddenWordByDashes = hiddenWordByDashesAfterChecking;
+			canvas.displayWord(hiddenWordByDashes);
+		}
+		return gameOn;
+	}
+	private String replaceDashesInHiddenWordByCurrentSign(){
+		boolean curSignHasInWord = riddleWord.contains(curSign);
+		String result ="";
+		if(curSignHasInWord){
+			for(int i = 0;i<riddleWord.length();i++){
+				if(riddleWord.charAt(i)==curSign.charAt(0)){
+					result = result+curSign;
+				}
+				else{
+					result = result+hiddenWordByDashes.substring(i, i+1);
+				}
+			}
+			return result;
+		}
+		else{
+			result = hiddenWordByDashes;
+			return result;
+		}
+	}
+	
+	private String getStringWithDashesInsteadSigns(){
+		String result = "";
+		for(int i=0;i<riddleWord.length();i++){
+			result+="-";
+		}
+		return result;
+	}
+	private String getRiddleWord(HangmanLexicon lexicon){
+		int wordCount = lexicon.getWordCount()-1;
+		RandomGenerator random = new RandomGenerator();
+		String riddleWord = lexicon.getWord(random.nextInt(0, wordCount));
+		return riddleWord.toUpperCase();
+	}
+	
+}

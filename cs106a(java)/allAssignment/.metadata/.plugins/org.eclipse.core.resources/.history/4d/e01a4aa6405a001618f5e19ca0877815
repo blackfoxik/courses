@@ -1,0 +1,251 @@
+import acm.graphics.*;
+import acm.program.*;
+import acm.util.*;
+import java.awt.*;
+import java.awt.event.*; 
+
+public class Breakout extends GraphicsProgram {
+	
+	/** Width and height of application window in pixels */
+	 public static final int APPLICATION_WIDTH = 400;
+	 public static final int APPLICATION_HEIGHT = 600;
+	/** Dimensions of game board (usually the same) */
+	 private static final int WIDTH = APPLICATION_WIDTH;
+	 private static final int HEIGHT = APPLICATION_HEIGHT;
+	/** Dimensions of the paddle */
+	 private static final int PADDLE_WIDTH = 60;
+	 private static final int PADDLE_HEIGHT = 10;
+	/** Offset of the paddle up from the bottom */
+	 private static final int PADDLE_Y_OFFSET = 30;
+	/** Number of bricks per row */
+	 private static final int NBRICKS_PER_ROW = 10;
+	/** Number of rows of bricks */
+	 private static final int NBRICK_ROWS = 10;
+	/** Separation between bricks */
+	 private static final int BRICK_SEP = 4;
+	/** Width of a brick */
+	 private static final int BRICK_WIDTH =
+	 (WIDTH - (NBRICKS_PER_ROW - 1) * BRICK_SEP) / NBRICKS_PER_ROW;
+	/** Height of a brick */
+	 private static final int BRICK_HEIGHT = 8;
+	/** Radius of the ball in pixels */
+	 private static final int BALL_RADIUS = 10;
+	/** Offset of the top brick row from the top */
+	 private static final int BRICK_Y_OFFSET = 70;
+	/** Number of turns */
+	 private static final int NTURNS = 3;
+	
+	 private static GRect paddle;
+	 private GLabel mainLabel;
+	 private GLabel labelCountLifes;
+	 private GLabel labelCountBricks;
+	 private double shiftMouse;
+	 private GOval ball;
+	 private RandomGenerator rgen = RandomGenerator.getInstance();
+	 private double vx, vy;
+	 private int lifes = NTURNS;
+	 private int countAllBricks = NBRICKS_PER_ROW*NBRICK_ROWS;
+	 private int curCountBricks = countAllBricks;
+	 
+	public void run(){
+		setUp();	
+		playGame();
+	}
+	private void setUp(){
+		putBricks();
+		createPaddle();
+		putBall();
+		showInfo();
+	}
+	private void showInfo(){
+		int positionMainLabelX = getWidth()/2 - PADDLE_WIDTH/2;
+		int positionMainLabelY = getHeight() -PADDLE_Y_OFFSET-90;
+		mainLabel = new GLabel("",positionMainLabelX,positionMainLabelY);
+		labelCountLifes = new GLabel("Lifes: "+lifes,positionMainLabelX-100,positionMainLabelY+115);
+		labelCountBricks = new GLabel("Bricks: "+curCountBricks,positionMainLabelX-50,positionMainLabelY+115);
+		add(mainLabel);
+		add(labelCountLifes);
+		add(labelCountBricks);	
+	}
+	
+	private void playGame(){
+		
+		for(int i=0;i<NTURNS;i++)
+		{
+			showThreeTwoOneGo();
+			vx = rgen.nextDouble(1.0, 3.0);
+			if (rgen.nextBoolean(0.5)) vx = -vx;
+			vy = rgen.nextDouble(1.0, 3.0);
+			boolean gameOn = true; 
+			while(gameOn){
+				gameOn = checkBallInGame(); 
+				ball.move(vx,vy);
+				pause(15);
+				}
+			boolean haveBricks = checkHaveBricks();
+			if(haveBricks==false){
+				mainLabel.setLabel("You win!");
+				break;
+			}
+			else if(i==NTURNS-1){		
+				mainLabel.setLabel("You lose");
+			}
+		}
+		remove(ball);
+	}
+	private void showThreeTwoOneGo(){
+		mainLabel.setLabel("3");
+		pause(1000);
+		mainLabel.setLabel("2");
+		pause(1000);
+		mainLabel.setLabel("1");
+		pause(1000);
+		mainLabel.setLabel("GO!");
+		pause(500);
+		mainLabel.setLabel("");
+	}
+	private Boolean checkHaveBricks(){
+		if(curCountBricks>0){
+			return true;
+		}
+		else{
+			return false; 	
+		}
+	}
+	private Boolean checkBallInGame(){
+			//  Points scheme for ball
+			//
+			//	A------B
+			//	|	   |	
+			//	| ball |
+			//	C------D
+			GPoint pointA = new GPoint(ball.getX(),ball.getY());
+			GPoint pointB = new GPoint(ball.getX()+BALL_RADIUS*2,ball.getY());
+			GPoint pointC = new GPoint(ball.getX(),ball.getY()+BALL_RADIUS*2);
+			GPoint pointD = new GPoint(ball.getX()+BALL_RADIUS*2,ball.getY()+BALL_RADIUS*2);
+			
+			GPoint[] arrayBallPoint = new GPoint[] {pointA,pointB,pointC,pointD};
+			
+			//check ball face with brick
+			for(GPoint curPoint : arrayBallPoint){
+				GObject curObject = getElementAt(curPoint.getX(),curPoint.getY());
+				if(curObject!=null){
+					if(curObject!=paddle&&curObject!=mainLabel&&curObject!=labelCountBricks&&curObject!=labelCountLifes&&curObject!=ball){
+						curCountBricks--;
+						remove(curObject);
+						vy = -vy;	
+						labelCountBricks.setLabel("Bricks: "+curCountBricks);
+						return true;
+					}
+				}
+				}
+			//check ball on paddle(point B,D)
+			GObject curObject = getElementAt(pointB.getX(),pointB.getY());
+			if(curObject!=null){
+				if(curObject==paddle){
+					vy = -vy;
+					return true;
+				}
+			}
+			curObject = getElementAt(pointD.getX(),pointD.getY());
+			if(curObject!=null){
+				if(curObject==paddle){
+					vy = -vy;
+					return true;
+				}
+			}
+			
+			//check boundary (pointA,pointD)
+			if(pointA.getX()<=0||pointD.getX()>=APPLICATION_WIDTH){
+				vx = -vx;
+				return true;
+			}
+			if(pointA.getY()<=0){
+				vy = -vy;
+				return true;
+			}
+			
+			//if ball under paddle
+			if(pointD.getY()+PADDLE_Y_OFFSET>=APPLICATION_HEIGHT){
+				lifes--;
+				labelCountLifes.setLabel("Lifes: "+lifes);
+				GPoint centerPointForBall = getCenterForBall();
+				ball.setLocation(centerPointForBall.getX(),centerPointForBall.getY());
+				return false;	
+			}
+			
+			//check have bricks
+			if(checkHaveBricks()==false){
+				return false;
+			}
+			else{
+				return true;
+			}
+	}
+
+	public void mousePressed(MouseEvent e){
+		shiftMouse = e.getX() - paddle.getX();
+	}
+	public void mouseDragged(MouseEvent e) {
+		if(e.getX()-shiftMouse<=APPLICATION_WIDTH-PADDLE_WIDTH && e.getX()-shiftMouse>=0){
+			paddle.setLocation(e.getX()-shiftMouse, paddle.getY());
+		}	
+	}
+	private void putBall(){
+		GPoint centerPointForBall = getCenterForBall();
+		ball = new GOval(centerPointForBall.getX(),centerPointForBall.getY(),BALL_RADIUS*2,BALL_RADIUS*2);
+ 		ball.setFillColor(Color.BLACK);
+ 		ball.setFilled(true);
+		add(ball);
+	}
+	private GPoint getCenterForBall(){
+		double positionOvalX = getWidth()/2 - BALL_RADIUS/2;
+		double heightBricks = BRICK_HEIGHT*NBRICK_ROWS + NBRICK_ROWS*BRICK_SEP - BRICK_SEP;
+		double reminderPlace = (getHeight()- heightBricks - BRICK_Y_OFFSET -PADDLE_Y_OFFSET)/2;
+		double positionOvalY = heightBricks + BRICK_Y_OFFSET +reminderPlace -BALL_RADIUS/2;
+		GPoint centerPointBall = new GPoint(positionOvalX,positionOvalY);
+		return centerPointBall;
+	}
+	private void createPaddle(){
+		int positionPaddleX = getWidth()/2 - PADDLE_WIDTH/2;
+		int positionPaddleY = getHeight() -PADDLE_Y_OFFSET;
+		paddle = new GRect(positionPaddleX,positionPaddleY,PADDLE_WIDTH,PADDLE_HEIGHT);
+		paddle.setFilled(true);
+		paddle.setFillColor(Color.black);
+		paddle.addMouseListener(this);
+		paddle.addMouseMotionListener(this);
+		add(paddle);	
+	}
+	private void putBricks(){
+		Color[] brickColors = new Color[]{ Color.RED, Color.ORANGE, Color.YELLOW, Color.GREEN, Color.CYAN};
+		for(int i=0;i<NBRICK_ROWS;i++){
+			for(int j=0;j<NBRICKS_PER_ROW;j++){
+				int currentBrickPositionX =BRICK_SEP/2 + j*BRICK_SEP + j*BRICK_WIDTH;
+				int currentBrickPositionY = BRICK_Y_OFFSET + (i*BRICK_HEIGHT) + i*BRICK_SEP;
+				GRect brick = new GRect (currentBrickPositionX,currentBrickPositionY,BRICK_WIDTH,BRICK_HEIGHT);
+				Color currentColor = chooseColor(i,brickColors);
+				brick.setColor(currentColor);
+				brick.setFilled(true);
+				add(brick);
+			}
+		}
+	}
+	private Color chooseColor(int currentNumberLine,Color[] brickColors){
+		int reminder = NBRICK_ROWS % brickColors.length;
+		int coefficient;
+			if(reminder==0){
+				coefficient = NBRICK_ROWS / brickColors.length;
+			}
+			else{
+				coefficient = (NBRICK_ROWS - reminder) / brickColors.length;
+			}
+		int numberColorInArray = currentNumberLine/coefficient;
+			if(numberColorInArray > brickColors.length-1){
+				numberColorInArray = brickColors.length-1;
+			}
+		return brickColors[numberColorInArray];
+	}
+		
+}
+
+
